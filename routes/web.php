@@ -23,10 +23,37 @@ $router->get('/', function () use ($router) {
 });
 
 $router->group(['prefix' => 'ml'], function () use ($router) {
-    $router->post('/createtoken', 'MercadoLivreIntegrationController@createToken');
+    $router->post('/createtoken',
+        [
+            'middleware' => 'meliAuth',
+            'uses' => 'MercadoLivreIntegrationController@createToken'
+        ]
+    );
+    $router->post('/createproduct',
+        [
+            'middleware' => 'meliAuth',
+            'uses' => 'MercadoLivreIntegrationController@createProduct'
+        ]
+    );
+    $router->post('/changeproduct/{productId}',
+        [
+            'middleware' => 'meliAuth',
+            'uses' => 'MercadoLivreIntegrationController@changeProduct'
+        ]
+    );
+    $router->put('/delete/{productId}',
+        [
+            'middleware' => 'meliAuth',
+            'uses' => 'MercadoLivreIntegrationController@deleteProduct'
+        ]
+    );
+    $router->put('/changestatus/{productId}/{status}',
+        [
+            'middleware' => 'meliAuth',
+            'uses' => 'MercadoLivreIntegrationController@changeStatus'
+        ]
+    );
     $router->get('/categories', 'MercadoLivreIntegrationController@getCategories');
-    $router->post('/createproduct', 'MercadoLivreIntegrationController@createProduct');
     $router->get('/categoryinfo/{category}', 'MercadoLivreIntegrationController@getCategoryData');
-    $router->post('/changeproduct/{productId}', 'MercadoLivreIntegrationController@changeProduct');
-    $router->post('/changestatus/{status}', 'MercadoLivreIntegrationController@changeStatus');
+    $router->get('/status', 'MercadoLivreIntegrationController@getStatus');
 });

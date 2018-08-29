@@ -8,6 +8,7 @@
 
     namespace App\Http\Controllers;
 
+    use App\Http\Middleware\MeliAuthMiddleware;
     use Dsc\MercadoLivre\Meli;
     use Dsc\MercadoLivre\Resources\Authorization\AuthorizationService;
     use Illuminate\Http\Request;
@@ -20,20 +21,14 @@
 
     class MercadoLivreIntegrationController extends Controller
     {
-        public $token;
-        public $meli;
 
         /**
          * @param Request $request
          * @return false|string
          */
-        public function __construct(Request $request)
+        public function createToken(Request $request)
         {
-            $meli = new Meli($request->appId, $request->appSecretKey);
-            $service = new AuthorizationService($meli);
-            $this->token = $service->getAccessToken();
-            $this->meli = $meli;
-            return json_encode($this->token);
+            return MeliAuthMiddleware::$token;
         }
 
         /**
@@ -50,7 +45,7 @@
                 ->setBuyingMode($request->buyingMode)
                 ->setListingTypeId($request->listingType)
                 ->setCondition($request->condition)
-//                ->setDescription($request->description) corrigir isso plain_text
+                ->setDescription($request->description) //corrigir isso plain_text
                 ->setWarranty($request->warranty);
 
             if ($request->photos) {
@@ -58,8 +53,7 @@
                     $item->addPicture($this->setImage($photo)); // collection de imagens
                 }
             }
-
-            $announcement = new Announcement($this->meli);
+            $announcement = new Announcement(MeliAuthMiddleware::$meli);
             $response = $announcement->create($item);
 
             // Link do produto publicado
@@ -71,52 +65,71 @@
          */
         public function getCategories()
         {
+            $return = [];
             $service = new CategoryService();
-            $data = $service->findCategories(Site::BRASIL);
-            return json_encode($data->getValues());
+            $data = ($service->findCategories(Site::BRASIL))->getValue();
+            foreach ($data as $key => $datum) {
+                $return[$key]['id'] = $datum->getId();
+                $return[$key]['name'] = $datum->getName();
+            }
+            return json_encode($return);
         }
 
         /**
          * @param $categoryCod
          * @return array
-         * @todo validar
          */
         public function getCategoryData($categoryCod)
         {
-            $category = [];
+            $categoryData = [];
             $service = new CategoryService();
-            $category['category'] = $service->findCategory($categoryCod);
-            $category['category']->attributes = $service->findCategoryAttributes($categoryCod);
-            return $category;
+            $attributes = ($service->findCategoryAttributes($categoryCod))->getValues();
+            foreach ($attributes as $key => $attribute) {
+                $categoryData[$key]['id'] = $attribute->getId();
+                $categoryData[$key]['name'] = $attribute->getName();
+                $categoryData[$key]['value_type'] = $attribute->getValueType();
+            }
+            return json_encode($categoryData);
         }
 
         /**
          * @param Request $request
          * @param $productId
          * @return false|string
-         * @todo validar como podemos fazer isso, talvez os dados ja sendo mandados corretamente
          */
         public function changeProduct(Request $request, $productId)
         {
-            $data = [
-                'title' => 'New title',
-                'available_quantity' => 10,
-                'price' => 100
-            ];
-
-            $announcement = new Announcement($this->meli);
-            $response = $announcement->update($productId, $data);
+            $this->createToken($request);
+            $announcement = new Announcement(MeliAuthMiddleware::$meli);
+            $response = $announcement->update($productId, $request->update);
             return json_encode($response->getPermalink());
         }
 
-        public function changeStatus(Request $request, $status)
+        public function changeStatus(Request $request, $productId, $status)
         {
-            if (!Status::isValid(strtoupper($status))) {
+            if (!Status::isValid(strtolower($status))) {
                 return json_encode(['error' => 'Type not found']);
             }
-            $announcement = new Announcement($this->meli);
-            $response = $announcement->changeStatus('ITEM-CODE', Status::PAUSED);
+            $this->createToken($request);
+            $announcement = new Announcement(MeliAuthMiddleware::$meli);
+            $response = $announcement->changeStatus($productId, strtolower($status));
             return json_encode($response->getPermalink());
+        }
+
+        public function getStatus()
+        {
+            $data[0] = Status::ACTIVE;
+            $data[1] = Status::CLOSED;
+            $data[2] = Status::PAUSED;
+            return json_encode($data);
+        }
+
+        public function deleteProduct(Request $request, $productId)
+        {
+            $this->createToken($request);
+            $announcement = new Announcement(MeliAuthMiddleware::$meli);
+            $announcement->delete($productId);
+            return json_encode(['status' => 'ok', 'message' => 'deleted']);
         }
 
         /**
