@@ -19,7 +19,6 @@
 
     class MercadoLivreIntegrationController extends Controller
     {
-
         /**
          * @param Request $request
          * @return false|string
