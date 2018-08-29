@@ -5,21 +5,7 @@ services:
     volumes:
       - ./:/var/www/html/
       - ./config/docker/vhost.conf:/etc/apache2/sites-available/000-default.conf
-    links:
-      - mysql
     environment:
         PHP_XDEBUG_ENABLED: 1 # Set 1 to enable.
         PHP_IDE_CONFIG: "serverName=docker"
         XDEBUG_CONFIG: "remote_host=172.17.0.1"
-
-  mysql:
-        image: mysql:5.6
-        volumes:
-          - .:/volumes
-        environment:
-          - MYSQL_ROOT_PASSWORD=my-secret_pw
-          - MYSQL_DATABASE=mysql-database
-          - MYSQL_USER=mysql-user
-          - MYSQL_PASSWORD=mysql-password
-        ports:
-          - "3306:3306"
