@@ -9,8 +9,6 @@
     namespace App\Http\Controllers;
 
     use App\Http\Middleware\MeliAuthMiddleware;
-    use Dsc\MercadoLivre\Meli;
-    use Dsc\MercadoLivre\Resources\Authorization\AuthorizationService;
     use Illuminate\Http\Request;
     use Dsc\MercadoLivre\Requests\Category\CategoryService;
     use Dsc\MercadoLivre\Environments\Site;
