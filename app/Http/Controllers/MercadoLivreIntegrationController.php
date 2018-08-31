@@ -8,6 +8,7 @@
 
     namespace App\Http\Controllers;
 
+    use App\Announcement\OrderStatus;
     use App\Http\Middleware\MeliAuthMiddleware;
     use Illuminate\Http\Request;
     use Dsc\MercadoLivre\Requests\Category\CategoryService;
@@ -16,6 +17,8 @@
     use Dsc\MercadoLivre\Announcement\Picture;
     use Dsc\MercadoLivre\Announcement;
     use Dsc\MercadoLivre\Announcement\Status;
+    use Dsc\MercadoLivre\Resources\User\UserService;
+    use App\Http\Resources\OrdersResource;
 
     class MercadoLivreIntegrationController extends Controller
     {
@@ -64,7 +67,7 @@
         {
             $return = [];
             $service = new CategoryService();
-            $data = ($service->findCategories(Site::BRASIL))->getValue();
+            $data = $service->findCategories(Site::BRASIL);
             foreach ($data as $key => $datum) {
                 $return[$key]['id'] = $datum->getId();
                 $return[$key]['name'] = $datum->getName();
@@ -107,7 +110,6 @@
             if (!Status::isValid(strtolower($status))) {
                 return json_encode(['error' => 'Type not found']);
             }
-            $this->createToken($request);
             $announcement = new Announcement(MeliAuthMiddleware::$meli);
             $response = $announcement->changeStatus($productId, strtolower($status));
             return json_encode($response->getPermalink());
@@ -115,24 +117,63 @@
 
         public function getStatus()
         {
-            $data[0] = Status::ACTIVE;
-            $data[1] = Status::CLOSED;
-            $data[2] = Status::PAUSED;
+            $data[Status::ACTIVE]['name'] = 'Ativo';
+            $data[Status::CLOSED]['name'] = 'Fechado';
+            $data[Status::PAUSED]['name'] = 'Pausado';
+            return json_encode($data);
+        }
+
+        public function getStatusOrders()
+        {
+            $data[OrderStatus::CANCELLED]['name'] = 'Cancelado';
+            $data[OrderStatus::CONFIRMED]['name'] = 'Confirmado';
+            $data[OrderStatus::INVALID]['name'] = 'Invalido';
+            $data[OrderStatus::PAID]['name'] = 'Pagamento Associado';
+            $data[OrderStatus::PARTIALLY_PAID]['name'] = 'Pago Parcialmente';
+            $data[OrderStatus::PAYMENT_REQUIRED]['name'] = 'Pagamento Requerido';
+            $data[OrderStatus::PAYMENT_IN_PROCESS]['name'] = 'Pagamento em processamento';
             return json_encode($data);
         }
 
         public function deleteProduct(Request $request, $productId)
         {
-            $this->createToken($request);
             $announcement = new Announcement(MeliAuthMiddleware::$meli);
             $announcement->delete($productId);
             return json_encode(['status' => 'ok', 'message' => 'deleted']);
         }
 
+        public function getOrders(Request $request, $limit = 20, $offset = 0, $sort = 'date_desc', $status = 'paid')
+        {
+            $service = new OrdersResource(MeliAuthMiddleware::$meli);
+            return json_encode(
+                $service->findOrdersBySeller(
+                    $this->getUserId(), $limit, $offset, $sort
+                )->getResults()
+            );
+        }
+
+        public function getLastOrders(Request $request, $limit = 20, $offset = 0, $sort = 'date_desc', $status = 'paid')
+        {
+            $service = new OrdersResource(MeliAuthMiddleware::$meli);
+            return json_encode(
+                $service->findLastOrdersByBuyer(
+                    $this->getUserId(), $limit, $offset, $sort, $status
+                )->getResults()
+            );
+        }
+
+        /**
+         * @return int
+         */
+        protected function getUserId()
+        {
+            $service = new UserService(MeliAuthMiddleware::$meli);
+            return ($service->getInformationAuthenticatedUser())->getId();
+        }
+
         /**
          * @param String $image
          * @return Picture
-         * @todo validate
          */
         protected function setImage($image)
         {

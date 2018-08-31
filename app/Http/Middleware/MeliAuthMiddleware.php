@@ -20,15 +20,11 @@ class MeliAuthMiddleware
      */
     public function handle($request, Closure $next)
     {
-        static::$meli = new Meli($request->appId, $request->appSecretKey);
-        $service = new AuthorizationService(static::$meli);
-        if (static::$token = $service->getAccessToken()) {
-            return $next($request);
+        if (!$request->isMethod('GET')) {
+            static::$meli = new Meli($request->appId, $request->appSecretKey);
+            $service = new AuthorizationService(static::$meli);
+            static::$token = $service->getAccessToken();
         }
-    }
-
-    public static function getMeli()
-    {
-        return static::$meli;
+        return $next($request);
     }
 }
