@@ -27,4 +27,14 @@
             );
         }
 
+        public function getItem($itemId)
+        {
+            return $this->getResponse(
+                $this->get('/items/' . $itemId, [
+                    'item_id' => $itemId,
+                ]),
+                OrdersList::class
+            );
+        }
+
     }

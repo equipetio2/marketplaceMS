@@ -10,6 +10,7 @@
 
     use App\Announcement\OrderStatus;
     use App\Http\Middleware\MeliAuthMiddleware;
+    use GuzzleHttp\Client;
     use Illuminate\Http\Request;
     use Dsc\MercadoLivre\Requests\Category\CategoryService;
     use Dsc\MercadoLivre\Environments\Site;
@@ -69,8 +70,11 @@
             $service = new CategoryService();
             $data = $service->findCategories(Site::BRASIL);
             foreach ($data as $key => $datum) {
-                $return[$key]['id'] = $datum->getId();
-                $return[$key]['name'] = $datum->getName();
+                $categories = ($service->findCategory($datum->getId()))->getChildrenCategories();
+                foreach ($categories as $keyCategory => $category) {
+                    $return[$key][$datum->getName()][$keyCategory]['id'] = $category->getId();
+                    $return[$key][$datum->getName()][$keyCategory]['name'] = $category->getName();
+                }
             }
             return json_encode($return);
         }
@@ -99,7 +103,6 @@
          */
         public function changeProduct(Request $request, $productId)
         {
-            $this->createToken($request);
             $announcement = new Announcement(MeliAuthMiddleware::$meli);
             $response = $announcement->update($productId, $request->update);
             return json_encode($response->getPermalink());
@@ -152,14 +155,31 @@
             );
         }
 
-        public function getLastOrders(Request $request, $limit = 20, $offset = 0, $sort = 'date_desc', $status = 'paid')
+        /**
+         * @param Request $request
+         * @return \Psr\Http\Message\StreamInterface
+         * @throws \GuzzleHttp\Exception\GuzzleException
+         * @todo melhorar esse método
+         */
+        public function getLastOrders(Request $request)
         {
-            $service = new OrdersResource(MeliAuthMiddleware::$meli);
-            return json_encode(
-                $service->findLastOrdersByBuyer(
-                    $this->getUserId(), $limit, $offset, $sort, $status
-                )->getResults()
-            );
+            $client = new Client();
+            $response = $client->request('GET', 'https://api.mercadolibre.com/orders/search?seller=' . $this->getUserId() .
+                '&access_token=' . MeliAuthMiddleware::$token);
+            return $response->getBody();
+        }
+
+        /**
+         * @param $itemId
+         * @return \Psr\Http\Message\StreamInterface
+         * @throws \GuzzleHttp\Exception\GuzzleException
+         * @todo melhorar esse método.
+         */
+        public function getItem($itemId)
+        {
+            $client = new Client();
+            $response = $client->request('GET', 'https://api.mercadolibre.com/items/' . $itemId);
+            return $response->getBody();
         }
 
         /**

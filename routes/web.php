@@ -35,5 +35,5 @@ $router->group(['prefix' => 'ml', 'middleware' => 'meliAuth'], function () use (
     $router->get('/categoryinfo/{category}', 'MercadoLivreIntegrationController@getCategoryData');
     $router->get('/status', 'MercadoLivreIntegrationController@getStatus');
     $router->get('/ordersstatus', 'MercadoLivreIntegrationController@getStatusOrders');
-
+    $router->post('/item/{itemId}', 'MercadoLivreIntegrationController@getItem');
 });
