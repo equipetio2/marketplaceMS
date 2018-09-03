@@ -70,15 +70,11 @@
             $service = new CategoryService();
             $data = $service->findCategories(Site::BRASIL);
             foreach ($data as $key => $datum) {
-                $categories = ($service->findCategory($datum->getId()))->getChildrenCategories();
-                foreach ($categories as $keyCategory => $category) {
-                    $return[$key][$datum->getName()][$keyCategory]['id'] = $category->getId();
-                    $return[$key][$datum->getName()][$keyCategory]['name'] = $category->getName();
-                }
+                $return[$key]['id'] = $datum->getId();
+                $return[$key]['name'] = $datum->getName();
             }
             return json_encode($return);
         }
-
         /**
          * @param $categoryCod
          * @return array
@@ -87,11 +83,10 @@
         {
             $categoryData = [];
             $service = new CategoryService();
-            $attributes = ($service->findCategoryAttributes($categoryCod))->getValues();
+            $attributes = ($service->findCategory($categoryCod))->getChildrenCategories();
             foreach ($attributes as $key => $attribute) {
                 $categoryData[$key]['id'] = $attribute->getId();
                 $categoryData[$key]['name'] = $attribute->getName();
-                $categoryData[$key]['value_type'] = $attribute->getValueType();
             }
             return json_encode($categoryData);
         }
