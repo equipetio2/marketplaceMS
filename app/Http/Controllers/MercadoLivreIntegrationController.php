@@ -89,11 +89,23 @@
             $attributes = ($service->findCategory($categoryCod))->getChildrenCategories();
             foreach ($attributes as $key => $attribute) {
                 $categories = $service->findCategory($attribute->getId());
-                    $categoryData[$categories->getName()][$key]['id'] = $categories->getId();
-                    $categoryData[$categories->getName()][$key]['name'] = $categories->getName();
+                $categoryData[$categories->getName()][$key]['id'] = $categories->getId();
+                $categoryData[$categories->getName()][$key]['name'] = $categories->getName();
                 foreach ($categories->getChildrenCategories() as $keyCategory => $category) {
                     $categoryData[$categories->getName()][$keyCategory]['id'] = $category->getId();
                     $categoryData[$categories->getName()][$keyCategory]['name'] = $category->getName();
+                    $childrenCategories = $service->findCategory($category->getId());
+                    foreach ($childrenCategories->getChildrenCategories() as $keyChildren => $childrenCategory) {
+                        $categoryData[$categories->getName()][$category->getName()][$keyChildren]['id'] = $childrenCategory->getId();
+                        $categoryData[$categories->getName()][$category->getName()][$keyChildren]['name'] = $childrenCategory->getName();
+                        unset($categoryData[$categories->getName()][$keyCategory]);
+                        $lastCategories = $service->findCategory($childrenCategory->getId());
+                        foreach ($lastCategories->getChildrenCategories() as $keyLast => $lastCategory) {
+                            $categoryData[$categories->getName()][$category->getName()][$childrenCategory->getName()][$keyLast]['id'] = $lastCategory->getId();
+                            $categoryData[$categories->getName()][$category->getName()][$childrenCategory->getName()][$keyLast]['name'] = $lastCategory->getName();
+                            unset($categoryData[$categories->getName()][$category->getName()][$keyChildren]);
+                        }
+                    }
                 }
             }
             return json_encode($categoryData);
