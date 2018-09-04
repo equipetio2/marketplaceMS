@@ -70,8 +70,11 @@
             $service = new CategoryService();
             $data = $service->findCategories(Site::BRASIL);
             foreach ($data as $key => $datum) {
-                $return[$key]['id'] = $datum->getId();
-                $return[$key]['name'] = $datum->getName();
+                $category = ($service->findCategory($datum->getId()))->getChildrenCategories();
+                foreach ($category as $subKey => $item) {
+                    $return[$datum->getName()][$subKey]['id'] = $item->getId();
+                    $return[$datum->getName()][$subKey]['name'] = $item->getName();
+                }
             }
             return json_encode($return);
         }
@@ -85,8 +88,13 @@
             $service = new CategoryService();
             $attributes = ($service->findCategory($categoryCod))->getChildrenCategories();
             foreach ($attributes as $key => $attribute) {
-                $categoryData[$key]['id'] = $attribute->getId();
-                $categoryData[$key]['name'] = $attribute->getName();
+                $categories = $service->findCategory($attribute->getId());
+                    $categoryData[$categories->getName()][$key]['id'] = $categories->getId();
+                    $categoryData[$categories->getName()][$key]['name'] = $categories->getName();
+                foreach ($categories->getChildrenCategories() as $keyCategory => $category) {
+                    $categoryData[$categories->getName()][$keyCategory]['id'] = $category->getId();
+                    $categoryData[$categories->getName()][$keyCategory]['name'] = $category->getName();
+                }
             }
             return json_encode($categoryData);
         }

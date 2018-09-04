@@ -9,3 +9,7 @@ services:
         PHP_XDEBUG_ENABLED: 1 # Set 1 to enable.
         PHP_IDE_CONFIG: "serverName=docker"
         XDEBUG_CONFIG: "remote_host=172.17.0.1"
+networks:
+  default:
+    external:
+      name: marketplace
