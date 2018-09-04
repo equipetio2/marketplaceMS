@@ -86,8 +86,11 @@
         {
             $categoryData = [];
             $service = new CategoryService();
-            $attributes = ($service->findCategory($categoryCod))->getChildrenCategories();
-            foreach ($attributes as $key => $attribute) {
+            $attributes = $service->findCategory($categoryCod);
+            $categoryData[$attributes->getName()][0]['id'] = $attributes->getId();
+            $categoryData[$attributes->getName()][0]['name'] = $attributes->getName();
+            foreach ($attributes->getChildrenCategories() as $key => $attribute) {
+                unset($categoryData);
                 $categories = $service->findCategory($attribute->getId());
                 $categoryData[$categories->getName()][$key]['id'] = $categories->getId();
                 $categoryData[$categories->getName()][$key]['name'] = $categories->getName();
