@@ -139,9 +139,19 @@ class MercadoLivreIntegrationController extends Controller
      */
     public function changeProduct(Request $request, $productId)
     {
-        $announcement = new Announcement(MeliAuthMiddleware::$meli);
-        $response = $announcement->update($productId, $request->update);
-        return json_encode($response->getPermalink());
+        $accessToken = $this->accessToken($request->appId, $request->appSecretKey);
+
+        $url = 'https://api.mercadolibre.com/items/'.$productId.'?access_token='.$accessToken;
+        $data = json_encode($request->update);
+        $curl = curl_init($url);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        $updatedProduct = curl_exec($curl);
+        curl_close($curl);
+
+        return json_encode($updatedProduct);
     }
 
     public function changeStatus(Request $request, $productId, $status)
